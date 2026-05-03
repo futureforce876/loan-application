@@ -6,6 +6,10 @@
 <title>FFF · Loan Application</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Syne:wght@400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<!-- PDF generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<!-- EmailJS — sends email directly from browser, no server needed -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 <style>
 :root {
   --void:    #020406;
@@ -754,6 +758,91 @@ body {
   .step-label { display: none; }
   .step-circle { width: 30px; height: 30px; font-size: 0.62rem; }
   .upload-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* ══ LOADING OVERLAY ══ */
+#loading-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(2,4,6,0.93);
+  backdrop-filter: blur(8px);
+  z-index: 9999;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+}
+
+#loading-overlay.active { display: flex; }
+
+.loading-hex {
+  width: 72px; height: 72px;
+  border: 2px solid rgba(201,168,76,0.2);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.loading-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 3px;
+  text-transform: uppercase;
+}
+
+.loading-status {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.68rem;
+  color: var(--muted);
+  letter-spacing: 1.5px;
+  text-align: center;
+  line-height: 1.8;
+  max-width: 320px;
+}
+
+.loading-bar-shell {
+  width: 260px;
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.loading-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--plasma), var(--gold));
+  border-radius: 999px;
+  width: 0%;
+  transition: width 0.4s ease;
+}
+
+/* ══ EMAIL SETUP NOTICE ══ */
+.emailjs-setup-notice {
+  background: rgba(255,78,26,0.08);
+  border: 1px solid rgba(255,78,26,0.3);
+  border-left: 3px solid var(--ember);
+  border-radius: var(--r);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  font-size: 0.82rem;
+  color: var(--muted);
+  line-height: 1.7;
+  display: none;
+}
+
+.emailjs-setup-notice strong { color: var(--ember); }
+.emailjs-setup-notice code {
+  background: rgba(0,0,0,0.4);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.75rem;
+  color: var(--plasma);
 }
 </style>
 </head>
@@ -1513,6 +1602,14 @@ body {
 
 </main>
 
+<!-- ═══════════ LOADING OVERLAY ═══════════ -->
+<div id="loading-overlay">
+  <div class="loading-hex"></div>
+  <div class="loading-title">Processing Application</div>
+  <div class="loading-bar-shell"><div class="loading-bar-fill" id="loading-bar"></div></div>
+  <div class="loading-status" id="loading-status">Preparing your application…</div>
+</div>
+
 <!-- ═══════════ FOOTER ═══════════ -->
 <footer class="site-footer">
   <div>FUTURE FORCE FINANCIAL · HALF WAY TREE · SAINT ANDREW · JAMAICA</div>
@@ -1748,30 +1845,595 @@ function buildReview() {
 }
 
 /* ══ SUBMIT ══ */
-function submitApplication() {
+/* ══ EMAILJS CONFIG ══════════════════════════════════════════════════════
+   SETUP INSTRUCTIONS (one-time, 5 minutes):
+   1. Go to https://www.emailjs.com and create a FREE account
+   2. Add Gmail service → connect futureforcefinancial@gmail.com
+   3. Create an email template — use template_id below
+      Subject: New FFF Loan Application — {{ref}} — {{applicant_name}}
+      Body:    {{message}}
+      To:      futureforcefinancial@gmail.com
+   4. Copy your Public Key from Account → API Keys
+   5. Replace the three values below with your actual IDs
+   ════════════════════════════════════════════════════════════════════════ */
+const EMAILJS_PUBLIC_KEY  = 'YOUR_PUBLIC_KEY_HERE';
+const EMAILJS_SERVICE_ID  = 'YOUR_SERVICE_ID_HERE';
+const EMAILJS_TEMPLATE_ID = 'YOUR_TEMPLATE_ID_HERE';
+
+/* ══ HELPERS ══ */
+function r(id, fallback) {
+  const el = document.getElementById(id);
+  return el ? (el.value.trim() || fallback || '—') : (fallback || '—');
+}
+function radio(name) {
+  const el = document.querySelector(`input[name="${name}"]:checked`);
+  return el ? el.value : '—';
+}
+function setStatus(msg, pct) {
+  document.getElementById('loading-status').textContent = msg;
+  document.getElementById('loading-bar').style.width = pct + '%';
+}
+
+/* ══ FILE → BASE64 ══ */
+function fileToBase64(inputId) {
+  return new Promise(resolve => {
+    const input = document.getElementById(inputId);
+    if (!input || !input.files || !input.files[0]) { resolve(null); return; }
+    const reader = new FileReader();
+    reader.onload = e => resolve({ name: input.files[0].name, type: input.files[0].type, data: e.target.result });
+    reader.onerror = () => resolve(null);
+    reader.readAsDataURL(input.files[0]);
+  });
+}
+
+/* ══ BUILD PDF ══ */
+async function buildPDF(ref) {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+  const W = 210, H = 297;
+  const ML = 15, MR = 15, MT = 15;
+  let y = MT;
+  const LH = 6; // line height mm
+  const COL = W - ML - MR;
+
+  // ── Colours
+  const GOLD  = [201, 168, 76];
+  const BLACK = [10, 15, 10];
+  const DARK  = [30, 40, 30];
+  const GREY  = [120, 128, 112];
+  const WHITE = [255, 255, 255];
+  const LIGHT = [245, 242, 235];
+
+  // ── Helpers
+  function newPage() {
+    doc.addPage();
+    y = MT;
+    // page border
+    doc.setDrawColor(...GOLD);
+    doc.setLineWidth(0.4);
+    doc.rect(8, 8, W - 16, H - 16);
+    // top bar
+    doc.setFillColor(...GOLD);
+    doc.rect(8, 8, W - 16, 4, 'F');
+  }
+
+  function checkY(needed) {
+    if (y + needed > H - 18) newPage();
+  }
+
+  function hRule(color) {
+    doc.setDrawColor(...(color || GOLD));
+    doc.setLineWidth(0.3);
+    doc.line(ML, y, W - MR, y);
+    y += 3;
+  }
+
+  function sectionHeader(title) {
+    checkY(14);
+    y += 2;
+    doc.setFillColor(...GOLD);
+    doc.rect(ML, y, COL, 7, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(9);
+    doc.setTextColor(...BLACK);
+    doc.text(title.toUpperCase(), ML + 3, y + 5);
+    y += 9;
+    doc.setTextColor(...DARK);
+  }
+
+  function row(label, value) {
+    checkY(LH + 1);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...GREY);
+    doc.text(label + ':', ML + 2, y + 4);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...DARK);
+    const wrapped = doc.splitTextToSize(String(value || '—'), COL - 60);
+    doc.text(wrapped, ML + 55, y + 4);
+    y += Math.max(LH, wrapped.length * 4.5);
+  }
+
+  function twoCol(pairs) {
+    // pairs = [[label,val],[label,val]]
+    checkY(LH + 1);
+    const halfW = COL / 2;
+    pairs.forEach((pair, i) => {
+      const x = ML + (i % 2) * (halfW + 2);
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(7.5);
+      doc.setTextColor(...GREY);
+      doc.text(pair[0] + ':', x, y + 3.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...DARK);
+      doc.text(String(pair[1] || '—').substring(0, 40), x, y + 7.5);
+      if (i % 2 === 1) y += 10;
+    });
+    if (pairs.length % 2 !== 0) y += 10;
+  }
+
+  function addImage(imgData, label) {
+    if (!imgData || !imgData.data) return;
+    checkY(70);
+    // label
+    doc.setFillColor(...LIGHT);
+    doc.rect(ML, y, COL, 6, 'F');
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(8);
+    doc.setTextColor(...DARK);
+    doc.text('📎  ' + label, ML + 3, y + 4.3);
+    y += 7;
+    try {
+      const isJPEG = imgData.type === 'image/jpeg' || imgData.type === 'image/jpg';
+      const fmt = isJPEG ? 'JPEG' : 'PNG';
+      const imgW = COL;
+      const maxH = 75;
+      // Load image to get natural dimensions
+      const tempImg = new Image();
+      tempImg.src = imgData.data;
+      const imgH = Math.min(maxH, (tempImg.naturalHeight / tempImg.naturalWidth) * imgW || 55);
+      checkY(imgH + 4);
+      doc.addImage(imgData.data, fmt, ML, y, imgW, imgH);
+      y += imgH + 4;
+    } catch(err) {
+      doc.setFont('helvetica', 'italic');
+      doc.setFontSize(8);
+      doc.setTextColor(...GREY);
+      doc.text('[File uploaded: ' + imgData.name + ']', ML + 3, y + 4);
+      y += 8;
+    }
+  }
+
+  // ═══════════════════ COVER ═══════════════════
+  // Gold top bar
+  doc.setFillColor(...GOLD);
+  doc.rect(0, 0, W, 8, 'F');
+
+  // Background
+  doc.setFillColor(8, 18, 12);
+  doc.rect(0, 8, W, H - 8, 'F');
+
+  // Border
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.5);
+  doc.rect(8, 12, W - 16, H - 20);
+
+  // Hex decorative
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.4);
+  const hx = W / 2, hy = 60, hr = 22;
+  const hexPts = Array.from({length:6},(_,i) => {
+    const a = (Math.PI/180) * (60*i - 30);
+    return [hx + hr * Math.cos(a), hy + hr * Math.sin(a)];
+  });
+  for (let i = 0; i < 6; i++) {
+    const [x1,y1] = hexPts[i], [x2,y2] = hexPts[(i+1)%6];
+    doc.line(x1,y1,x2,y2);
+  }
+  // inner hex
+  const hr2 = 14;
+  const hexPts2 = Array.from({length:6},(_,i) => {
+    const a = (Math.PI/180) * (60*i - 30);
+    return [hx + hr2 * Math.cos(a), hy + hr2 * Math.sin(a)];
+  });
+  for (let i = 0; i < 6; i++) {
+    const [x1,y1] = hexPts2[i], [x2,y2] = hexPts2[(i+1)%6];
+    doc.line(x1,y1,x2,y2);
+  }
+  // centre dot
+  doc.setFillColor(...GOLD);
+  doc.circle(hx, hy, 2, 'F');
+
+  // Company name
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(18);
+  doc.setTextColor(...GOLD);
+  doc.text('FUTURE FORCE FINANCIAL', W/2, 92, {align:'center'});
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  doc.setTextColor(...GREY);
+  doc.text('HALF WAY TREE · SAINT ANDREW · JAMAICA', W/2, 99, {align:'center'});
+
+  // Divider
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.3);
+  doc.line(40, 103, W-40, 103);
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(13);
+  doc.setTextColor(232, 223, 200);
+  doc.text('PERSONAL LOAN APPLICATION', W/2, 113, {align:'center'});
+
+  // Ref box
+  doc.setFillColor(20, 40, 25);
+  doc.setDrawColor(...GOLD);
+  doc.setLineWidth(0.4);
+  doc.roundedRect(55, 122, 100, 18, 2, 2, 'FD');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(7);
+  doc.setTextColor(...GOLD);
+  doc.text('APPLICATION REFERENCE', W/2, 128.5, {align:'center'});
+  doc.setFontSize(12);
+  doc.setTextColor(232, 223, 200);
+  doc.text(ref, W/2, 136, {align:'center'});
+
+  // Date
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(7.5);
+  doc.setTextColor(...GREY);
+  doc.text('Date Submitted: ' + new Date().toLocaleDateString('en-JM', {weekday:'long',year:'numeric',month:'long',day:'numeric'}), W/2, 150, {align:'center'});
+
+  // Applicant name block
+  const appName = [r('p-fn'), r('p-mn',''), r('p-ln')].filter(v => v && v !== '—').join(' ');
+  doc.setFillColor(15, 29, 20);
+  doc.setDrawColor(30, 48, 30);
+  doc.roundedRect(ML, 160, COL, 28, 2, 2, 'FD');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(7);
+  doc.setTextColor(...GOLD);
+  doc.text('APPLICANT', ML + 5, 168);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(13);
+  doc.setTextColor(232, 223, 200);
+  doc.text(appName, ML + 5, 176);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(8);
+  doc.setTextColor(...GREY);
+  doc.text(r('p-dig') + (r('p-flow') !== '—' ? '  |  ' + r('p-flow') : ''), ML + 5, 183);
+
+  // Disclaimer
+  doc.setFontSize(6.5);
+  doc.setTextColor(80, 95, 80);
+  doc.text('PRIVATE & CONFIDENTIAL — FOR FUTURE FORCE FINANCIAL USE ONLY', W/2, 260, {align:'center'});
+  doc.text('This document contains personal and financial information submitted by the loan applicant.', W/2, 265, {align:'center'});
+
+  // Bottom bar
+  doc.setFillColor(...GOLD);
+  doc.rect(0, H - 8, W, 8, 'F');
+
+  // ═══════════════════ SECTION PAGES ═══════════════════
+  newPage();
+
+  // ── PERSONAL
+  sectionHeader('Section 1 — Personal Information');
+  twoCol([
+    ['First Name', r('p-fn')],
+    ['Middle Name', r('p-mn')],
+    ['Last Name', r('p-ln')],
+    ['Nickname / Pet Name', r('p-nick')],
+    ['Date of Birth', r('p-dob')],
+    ['Gender', r('p-gender')],
+  ]);
+  twoCol([
+    ['Digicel', r('p-dig')],
+    ['Flow', r('p-flow')],
+    ['WhatsApp', r('p-whatsapp')],
+    ['Email', r('p-email')],
+  ]);
+
+  y += 2;
+  sectionHeader('Existing Loans (Other Lenders)');
+  twoCol([
+    ['Has Other Loans', radio('has-loans')],
+    ['Number of Loans', r('p-loan-count')],
+    ['Lenders', r('p-loan-who')],
+    ['Total Owed (J$)', r('p-loan-total')],
+  ]);
+  row('Notes', r('p-loan-notes'));
+
+  // ── ADDRESS
+  sectionHeader('Section 2 — Address & Property');
+  row('Home Address', r('h-addr'));
+  twoCol([
+    ['Parish', r('h-parish')],
+    ['Time at Address', r('h-duration')],
+    ['Dwelling Type', radio('h-type')],
+    ['Building Material', radio('h-mat')],
+    ['Colour of Building', r('h-color')],
+    ['Monthly Rent (J$)', r('h-rent')],
+  ]);
+  row('Landmark / Directions', r('h-landmark'));
+  row('Additional Notes', r('h-notes'));
+
+  // ── EMPLOYMENT
+  sectionHeader('Section 3 — Employment & Income');
+  twoCol([
+    ['Employment Status', radio('emp-type')],
+    ['Length of Employment', r('e-duration')],
+    ['Employer / Business', r('e-name')],
+    ['Job Title', r('e-title')],
+  ]);
+  row('Work Address', r('e-addr'));
+  twoCol([
+    ['Employer Contact', r('e-contact')],
+    ['Monthly Net Income (J$)', r('e-income')],
+    ['Pay Frequency', radio('pay-freq')],
+    ['Monthly Expenses (J$)', r('e-expenses')],
+  ]);
+  row('Other Income Sources', r('e-other-income'));
+
+  // ── LOAN
+  sectionHeader('Section 4 — Loan Details');
+  twoCol([
+    ['Amount Requested (J$)', r('l-amount')],
+    ['Repayment Term', radio('l-term') + ' month(s)'],
+    ['Repayment Frequency', radio('l-freq')],
+    ['Prior FFF Borrower', radio('prior-fff')],
+  ]);
+  const interest = Number(r('l-amount', '0').replace(/[^0-9.]/g,'')) * 0.15;
+  const loanTotal = Number(r('l-amount','0').replace(/[^0-9.]/g,'')) + interest + 2500;
+  twoCol([
+    ['Indicative Interest (15%)', 'J$' + interest.toFixed(2)],
+    ['Registration Fee', 'J$2,500.00'],
+    ['Estimated Total', 'J$' + loanTotal.toFixed(2)],
+    ['', ''],
+  ]);
+  row('Purpose of Loan', r('l-purpose'));
+
+  // ── GUARANTOR
+  sectionHeader('Section 5 — Guarantor Information');
+  twoCol([
+    ['Guarantor Name', r('g-name')],
+    ['Nickname', r('g-nick')],
+    ['Relationship', r('g-rel')],
+    ['Digicel', r('g-dig')],
+    ['Flow', r('g-flow')],
+    ['Email', r('g-email')],
+    ['Guarantor Income (J$)', r('g-income')],
+    ['Occupation', r('g-occupation')],
+  ]);
+  row('Home Address', r('g-addr'));
+  twoCol([
+    ['Home Colour', r('g-color')],
+    ['Building Material', radio('g-mat')],
+    ['Dwelling Type', radio('g-dtype')],
+    ['Landmark', r('g-landmark')],
+  ]);
+  row('Employer', r('g-employer'));
+  row('Work Address', r('g-work-addr'));
+  twoCol([
+    ['Employer Contact', r('g-emp-contact')],
+    ['', ''],
+  ]);
+  row('Additional Notes', r('g-notes'));
+
+  // ── DECLARATION
+  sectionHeader('Section 6 — Declaration');
+  doc.setFont('helvetica','italic');
+  doc.setFontSize(8);
+  doc.setTextColor(...GREY);
+  const decText = [
+    'The applicant declares that all information provided in this application is true,',
+    'accurate and complete. The applicant confirms their guarantor has been informed',
+    'and has consented to their role. The applicant agrees to the terms of Future Force',
+    'Financial including the 15% simple interest rate and J$2,500 registration fee.',
+  ];
+  decText.forEach(line => { checkY(6); doc.text(line, ML + 3, y + 4); y += 5.5; });
+  y += 6;
+  // Signature lines
+  checkY(28);
+  doc.setDrawColor(...GREY);
+  doc.setLineWidth(0.3);
+  doc.line(ML, y + 18, ML + 75, y + 18);
+  doc.line(W - MR - 75, y + 18, W - MR, y + 18);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(7);
+  doc.text('Applicant Signature & Date', ML, y + 22);
+  doc.text('FFF Officer', W - MR - 75, y + 22);
+  y += 28;
+
+  // ═══════════════════ DOCUMENT PAGES ═══════════════════
+  // Load all images
+  const imageFields = [
+    ['u-id-front',    'Government-Issued ID — Front'],
+    ['u-id-back',     'Government-Issued ID — Back'],
+    ['u-selfie',      'Applicant Photo'],
+    ['u-addr-proof',  'Proof of Address'],
+    ['u-dwelling',    'Photo of Applicant Dwelling'],
+    ['u-payslip',     'Proof of Income — Recent Payslip'],
+    ['u-biz-place',   'Proof of Income — Business / Stall Photo'],
+    ['u-tools',       'Proof of Income — Tools / Equipment'],
+    ['u-g-id',        'Guarantor — Government-Issued ID'],
+    ['u-g-selfie',    'Guarantor Photo'],
+    ['u-g-dwelling',  'Guarantor Dwelling Photo'],
+  ];
+
+  for (const [inputId, label] of imageFields) {
+    const imgData = await fileToBase64(inputId);
+    if (imgData && imgData.data && imgData.type.startsWith('image/')) {
+      newPage();
+      sectionHeader('Uploaded Document — ' + label);
+      addImage(imgData, label);
+    } else if (imgData && imgData.name) {
+      // non-image file (PDF)
+      checkY(14);
+      sectionHeader('Uploaded File — ' + label);
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(8);
+      doc.setTextColor(...GREY);
+      doc.text('File: ' + imgData.name + ' (PDF — view separately)', ML + 3, y + 4);
+      y += 10;
+    }
+  }
+
+  // Footer on last page
+  checkY(16);
+  y = H - 22;
+  hRule(GOLD);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(7);
+  doc.setTextColor(...GREY);
+  doc.text('Future Force Financial · Half Way Tree · Saint Andrew · Jamaica', W/2, y + 4, {align:'center'});
+  doc.text('Ref: ' + ref + '  |  Generated: ' + new Date().toISOString(), W/2, y + 9, {align:'center'});
+
+  return doc;
+}
+
+/* ══ SUBMIT APPLICATION ══ */
+async function submitApplication() {
   // Check declarations
   const checks = ['dec-truth','dec-guarantor','dec-terms','dec-contact'];
   const unchecked = checks.filter(id => !document.getElementById(id).checked);
   if (unchecked.length) {
-    alert('Please check all declaration boxes before submitting.');
+    alert('Please check all four declaration boxes before submitting.');
     return;
   }
 
+  // Check EmailJS is configured
+  const configured = EMAILJS_PUBLIC_KEY !== 'YOUR_PUBLIC_KEY_HERE';
+
+  // Show overlay
+  const overlay = document.getElementById('loading-overlay');
+  overlay.classList.add('active');
+  setStatus('Preparing your application…', 5);
+
   const btn = document.getElementById('submit-btn');
   btn.disabled = true;
-  btn.textContent = 'Submitting…';
 
-  // Simulate submission (in production: POST to server or email gateway)
-  setTimeout(() => {
-    const ref = 'FFF-' + Date.now().toString().slice(-6) + Math.random().toString(36).slice(2,5).toUpperCase();
+  // Generate ref number
+  const ref = 'FFF-' + new Date().toISOString().slice(2,10).replace(/-/g,'') + '-' +
+              Math.random().toString(36).slice(2,6).toUpperCase();
+
+  try {
+    // Build PDF
+    setStatus('Compiling application data…', 20);
+    await new Promise(r => setTimeout(r, 300));
+
+    setStatus('Embedding uploaded documents into PDF…', 40);
+    await new Promise(r => setTimeout(r, 200));
+
+    const doc = await buildPDF(ref);
+    setStatus('Finalising PDF document…', 65);
+    await new Promise(r => setTimeout(r, 200));
+
+    // Get PDF as base64
+    const pdfBase64 = doc.output('datauristring');
+    setStatus('Connecting to email service…', 75);
+    await new Promise(r => setTimeout(r, 200));
+
+    // Build text summary for email body
+    const appName = [r('p-fn'), r('p-mn',''), r('p-ln')].filter(v => v && v !== '—').join(' ');
+    const textSummary = `
+NEW LOAN APPLICATION — ${ref}
+Submitted: ${new Date().toLocaleString('en-JM')}
+
+APPLICANT
+Name: ${appName}
+Nickname: ${r('p-nick')}
+DOB: ${r('p-dob')}
+Digicel: ${r('p-dig')} | Flow: ${r('p-flow')}
+Email: ${r('p-email')}
+
+LOAN REQUEST
+Amount: J$${r('l-amount')}
+Term: ${radio('l-term')} month(s)
+Frequency: ${radio('l-freq')}
+Purpose: ${r('l-purpose')}
+
+ADDRESS
+${r('h-addr')}, ${r('h-parish')}
+Dwelling: ${radio('h-type')} | Material: ${radio('h-mat')} | Colour: ${r('h-color')}
+
+EMPLOYMENT
+Status: ${radio('emp-type')}
+Employer: ${r('e-name')} | Title: ${r('e-title')}
+Monthly Income: J$${r('e-income')}
+
+GUARANTOR
+Name: ${r('g-name')} (${r('g-nick')})
+Phone: ${r('g-dig')}
+Address: ${r('g-addr')}
+Employer: ${r('g-employer')}
+
+The full application including all uploaded documents is attached as a PDF.
+Reference: ${ref}
+    `.trim();
+
+    if (configured) {
+      // Init EmailJS
+      emailjs.init(EMAILJS_PUBLIC_KEY);
+      setStatus('Sending to futureforcefinancial@gmail.com…', 85);
+
+      // EmailJS has 50KB attachment limit on free plan.
+      // We send the PDF as a base64 string in the email body for the template to handle,
+      // or use a file attachment if the template supports it.
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email:       'futureforcefinancial@gmail.com',
+        ref:            ref,
+        applicant_name: appName,
+        message:        textSummary,
+        pdf_data:       pdfBase64,   // available in template as {{pdf_data}}
+        submitted_at:   new Date().toLocaleString('en-JM'),
+      });
+
+      setStatus('Application sent successfully!', 100);
+    } else {
+      // EmailJS not yet configured — download PDF locally as fallback
+      setStatus('Downloading application PDF…', 85);
+      await new Promise(r => setTimeout(r, 400));
+      doc.save(`FFF_Application_${ref}.pdf`);
+      setStatus('PDF downloaded to your device.', 100);
+    }
+
+    await new Promise(r => setTimeout(r, 600));
+    overlay.classList.remove('active');
+
+    // Show success
     document.getElementById('success-ref').textContent = 'REF: ' + ref;
-
-    // Hide all steps and progress
     document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
     document.querySelector('.progress-shell').style.display = 'none';
     document.getElementById('success-screen').style.display = 'block';
+
+    if (!configured) {
+      document.getElementById('success-screen').querySelector('.success-body').innerHTML += `
+        <br/><br/><span style="color:var(--gold);font-size:0.85rem;">
+        ⚠️ EmailJS is not yet configured. Your PDF has been downloaded to your device.
+        Send it manually to futureforcefinancial@gmail.com until the email service is set up.
+        </span>`;
+    }
+
     window.scrollTo({ top: 0, behavior: 'smooth' });
-  }, 1200);
+
+  } catch (err) {
+    console.error('Submission error:', err);
+    overlay.classList.remove('active');
+    btn.disabled = false;
+    btn.textContent = '✦ Submit Application';
+
+    // Fallback: download PDF regardless
+    try {
+      const doc2 = await buildPDF(ref);
+      doc2.save(`FFF_Application_${ref}.pdf`);
+      alert(
+        'The email could not be sent automatically. Your application PDF has been downloaded.\n\n' +
+        'Please email it manually to:\nfutureforcefinancial@gmail.com\n\n' +
+        'Reference: ' + ref
+      );
+    } catch(e2) {
+      alert('An error occurred. Please try again or contact FFF directly.\n\nError: ' + err.message);
+    }
+  }
 }
 
 /* ══ INIT ══ */
