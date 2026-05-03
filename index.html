@@ -1,0 +1,1781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FFF · Loan Application</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Syne:wght@400;500;600;700;800&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --void:    #020406;
+  --deep:    #060c0a;
+  --panel:   #0b1510;
+  --card:    #0f1d14;
+  --border:  #1a3020;
+  --gold:    #c9a84c;
+  --gold2:   #e8c96a;
+  --goldfade:rgba(201,168,76,0.12);
+  --plasma:  #00ffc8;
+  --plasma2: rgba(0,255,200,0.1);
+  --ember:   #ff4e1a;
+  --text:    #e8dfc8;
+  --muted:   #7a8070;
+  --muted2:  #4a5048;
+  --success: #00e87a;
+  --r: 8px;
+  --glow: 0 0 30px rgba(201,168,76,0.15);
+}
+
+*{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+
+body {
+  background: var(--void);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  min-height: 100vh;
+  background-image:
+    radial-gradient(ellipse 60% 40% at 20% 0%, rgba(0,255,200,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 60% at 80% 100%, rgba(201,168,76,0.06) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Crect width='80' height='80' fill='none'/%3E%3Cpath d='M0 40h80M40 0v80' stroke='%23ffffff03' stroke-width='1'/%3E%3C/svg%3E");
+  overflow-x: hidden;
+}
+
+/* ══ HEADER ══ */
+.site-header {
+  position: relative;
+  padding: 48px 24px 40px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.site-header::before {
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:3px;
+  background: linear-gradient(90deg, transparent 0%, var(--plasma) 30%, var(--gold) 60%, transparent 100%);
+}
+
+.header-hex {
+  width: 64px; height: 64px;
+  margin: 0 auto 20px;
+  position: relative;
+  display: flex; align-items: center; justify-content: center;
+}
+
+.header-hex svg { width: 100%; height: 100%; }
+
+.header-glow {
+  position: absolute;
+  width: 120px; height: 120px;
+  background: radial-gradient(circle, rgba(201,168,76,0.2) 0%, transparent 70%);
+  top: 50%; left: 50%;
+  transform: translate(-50%,-50%);
+  animation: pulse-glow 3s ease infinite;
+}
+
+@keyframes pulse-glow {
+  0%,100%{ opacity:1; transform:translate(-50%,-50%) scale(1); }
+  50%{ opacity:0.5; transform:translate(-50%,-50%) scale(1.3); }
+}
+
+.company-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 4px;
+  color: var(--plasma);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.company-name {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(1.2rem, 4vw, 2rem);
+  font-weight: 900;
+  color: var(--gold);
+  letter-spacing: 4px;
+  text-transform: uppercase;
+  line-height: 1;
+  margin-bottom: 6px;
+}
+
+.company-sub {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.62rem;
+  color: var(--muted);
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.header-title {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(1rem, 3vw, 1.5rem);
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+
+.header-desc {
+  margin: 10px auto 0;
+  max-width: 560px;
+  font-size: 0.92rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+/* ══ PROGRESS BAR ══ */
+.progress-shell {
+  padding: 28px 24px 0;
+  max-width: 860px;
+  margin: 0 auto;
+}
+
+.progress-steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  position: relative;
+}
+
+.progress-steps::before {
+  content: '';
+  position: absolute;
+  top: 18px; left: 0; right: 0;
+  height: 1px;
+  background: var(--border);
+  z-index: 0;
+}
+
+.progress-fill {
+  position: absolute;
+  top: 18px; left: 0;
+  height: 1px;
+  background: linear-gradient(90deg, var(--plasma), var(--gold));
+  z-index: 1;
+  transition: width 0.5s cubic-bezier(0.4,0,0.2,1);
+}
+
+.step-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  z-index: 2;
+  cursor: default;
+}
+
+.step-circle {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+  background: var(--void);
+  display: flex; align-items: center; justify-content: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--muted);
+  transition: all 0.3s;
+  position: relative;
+}
+
+.step-node.active .step-circle {
+  border-color: var(--plasma);
+  background: rgba(0,255,200,0.1);
+  color: var(--plasma);
+  box-shadow: 0 0 20px rgba(0,255,200,0.3);
+}
+
+.step-node.done .step-circle {
+  border-color: var(--gold);
+  background: var(--goldfade);
+  color: var(--gold);
+}
+
+.step-label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.52rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted2);
+  text-align: center;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.step-node.active .step-label { color: var(--plasma); }
+.step-node.done .step-label   { color: var(--gold); }
+
+/* ══ MAIN CONTAINER ══ */
+.app-container {
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 32px 24px 60px;
+}
+
+/* ══ FORM STEPS ══ */
+.form-step { display: none; }
+.form-step.active { display: block; animation: step-in 0.35s ease; }
+
+@keyframes step-in {
+  from { opacity:0; transform: translateY(16px); }
+  to   { opacity:1; transform: translateY(0); }
+}
+
+/* ══ SECTION CARD ══ */
+.form-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 28px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+}
+
+.form-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(201,168,76,0.4), transparent);
+}
+
+.card-title {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.card-title::before {
+  content: '';
+  width: 4px; height: 16px;
+  background: var(--gold);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.card-icon {
+  width: 18px; height: 18px;
+  opacity: 0.7;
+}
+
+/* ══ FIELDS ══ */
+.field-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.fg-2 { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+.fg-3 { grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); }
+
+.field { display: flex; flex-direction: column; gap: 6px; }
+
+.field label {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.field input,
+.field select,
+.field textarea {
+  background: rgba(0,0,0,0.35);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-size: 0.9rem;
+  padding: 10px 14px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -webkit-appearance: none;
+  width: 100%;
+}
+
+.field input:focus,
+.field select:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--gold);
+  box-shadow: 0 0 0 3px rgba(201,168,76,0.1);
+}
+
+.field input::placeholder,
+.field textarea::placeholder { color: var(--muted2); }
+
+.field select option { background: #0b1510; }
+
+.field textarea { resize: vertical; min-height: 80px; }
+
+.field.required label::after {
+  content: ' *';
+  color: var(--ember);
+}
+
+.field input[readonly] {
+  color: var(--muted);
+  border-style: dashed;
+  cursor: default;
+}
+
+.span-2 { grid-column: span 2; }
+.span-3 { grid-column: span 3; }
+
+@media (max-width:600px) {
+  .span-2, .span-3 { grid-column: span 1; }
+}
+
+/* ══ RADIO GROUPS ══ */
+.radio-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.radio-pill {
+  position: relative;
+}
+
+.radio-pill input[type="radio"] {
+  position: absolute;
+  opacity: 0;
+  width: 0; height: 0;
+}
+
+.radio-pill label {
+  display: block;
+  padding: 7px 14px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.radio-pill input:checked + label {
+  border-color: var(--gold);
+  background: var(--goldfade);
+  color: var(--gold2);
+}
+
+/* ══ UPLOAD ZONES ══ */
+.upload-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.upload-zone {
+  position: relative;
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 20px 16px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.25s;
+  background: rgba(0,0,0,0.2);
+  overflow: hidden;
+}
+
+.upload-zone:hover {
+  border-color: var(--gold);
+  background: var(--goldfade);
+}
+
+.upload-zone.dragover {
+  border-color: var(--plasma);
+  background: var(--plasma2);
+}
+
+.upload-zone.has-file {
+  border-color: var(--gold);
+  border-style: solid;
+}
+
+.upload-zone input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  width: 100%;
+  height: 100%;
+}
+
+.upload-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+  display: block;
+  line-height: 1;
+}
+
+.upload-title {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+
+.upload-hint {
+  font-size: 0.72rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.upload-preview {
+  position: relative;
+  width: 100%;
+  padding-top: 70%;
+  border-radius: 6px;
+  overflow: hidden;
+  margin-top: 8px;
+  display: none;
+  background: #000;
+}
+
+.upload-preview img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 6px;
+}
+
+.upload-preview .remove-img {
+  position: absolute;
+  top: 6px; right: 6px;
+  width: 22px; height: 22px;
+  background: var(--ember);
+  border: none;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 0.7rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 5;
+  font-weight: 700;
+}
+
+.upload-preview.visible { display: block; }
+
+.upload-filename {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.55rem;
+  color: var(--success);
+  margin-top: 6px;
+  word-break: break-all;
+  display: none;
+}
+
+.upload-zone.has-file .upload-filename { display: block; }
+
+/* ══ NOTICE / DISCLAIMER ══ */
+.notice-box {
+  background: rgba(201,168,76,0.06);
+  border: 1px solid rgba(201,168,76,0.2);
+  border-left: 3px solid var(--gold);
+  border-radius: var(--r);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.notice-box strong { color: var(--gold); }
+
+/* ══ STEP HEADER ══ */
+.step-header {
+  margin-bottom: 24px;
+}
+
+.step-num {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--plasma);
+  margin-bottom: 4px;
+}
+
+.step-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(1rem, 3vw, 1.35rem);
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 1px;
+}
+
+.step-sub {
+  font-size: 0.88rem;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+/* ══ DIVIDER ══ */
+.divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+  margin: 20px 0;
+}
+
+/* ══ CHECKBOX ══ */
+.check-field {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+}
+
+.check-field input[type="checkbox"] {
+  width: 18px; height: 18px;
+  accent-color: var(--gold);
+  flex-shrink: 0;
+  margin-top: 3px;
+  cursor: pointer;
+}
+
+.check-field span {
+  font-size: 0.85rem;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.check-field span a {
+  color: var(--gold);
+  text-decoration: none;
+}
+
+/* ══ NAVIGATION BUTTONS ══ */
+.nav-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 28px;
+  gap: 12px;
+}
+
+.btn {
+  font-family: 'Orbitron', monospace;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  border: none;
+  border-radius: var(--r);
+  padding: 13px 24px;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-prev {
+  background: transparent;
+  color: var(--muted);
+  border: 1px solid var(--border);
+}
+
+.btn-prev:hover { color: var(--text); border-color: var(--muted2); }
+
+.btn-next {
+  background: linear-gradient(135deg, var(--gold) 0%, #8a6010 100%);
+  color: #000;
+  flex: 1;
+  justify-content: center;
+  max-width: 280px;
+}
+
+.btn-next:hover { filter: brightness(1.15); box-shadow: var(--glow); }
+
+.btn-submit {
+  background: linear-gradient(135deg, var(--plasma) 0%, #008060 100%);
+  color: #000;
+  font-weight: 900;
+  flex: 1;
+  justify-content: center;
+  max-width: 320px;
+}
+
+.btn-submit:hover { filter: brightness(1.1); box-shadow: 0 0 30px rgba(0,255,200,0.3); }
+
+.btn:disabled { opacity: 0.4; cursor: not-allowed; filter: none; }
+
+/* ══ LOAN CALCULATOR ══ */
+.calc-box {
+  background: rgba(0,0,0,0.3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-top: 16px;
+}
+
+.calc-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 0.88rem;
+}
+
+.calc-row:last-child { border-bottom: none; }
+
+.calc-row .c-label { color: var(--muted); font-family: 'Space Mono', monospace; font-size: 0.65rem; letter-spacing: 1px; }
+.calc-row .c-val   { font-weight: 600; color: var(--text); }
+.calc-row.total    { border-top: 1px solid var(--border); margin-top: 4px; padding-top: 12px; }
+.calc-row.total .c-label { color: var(--gold); }
+.calc-row.total .c-val   { color: var(--gold2); font-size: 1.1rem; font-family: 'Orbitron', monospace; }
+
+/* ══ SUCCESS SCREEN ══ */
+#success-screen {
+  display: none;
+  text-align: center;
+  padding: 60px 24px;
+  animation: step-in 0.5s ease;
+}
+
+.success-hex {
+  width: 80px; height: 80px;
+  margin: 0 auto 24px;
+  display: flex; align-items: center; justify-content: center;
+  border: 2px solid var(--success);
+  border-radius: 50%;
+  background: rgba(0,232,122,0.1);
+  box-shadow: 0 0 40px rgba(0,232,122,0.2);
+  font-size: 2rem;
+}
+
+.success-title {
+  font-family: 'Orbitron', monospace;
+  font-size: clamp(1.2rem, 4vw, 1.8rem);
+  font-weight: 900;
+  color: var(--success);
+  letter-spacing: 2px;
+  margin-bottom: 12px;
+}
+
+.success-ref {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.8rem;
+  color: var(--gold);
+  letter-spacing: 3px;
+  margin-bottom: 16px;
+}
+
+.success-body {
+  color: var(--muted);
+  max-width: 480px;
+  margin: 0 auto;
+  line-height: 1.7;
+  font-size: 0.95rem;
+}
+
+/* ══ VALIDATION ERRORS ══ */
+.field-err {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--ember);
+  letter-spacing: 0.5px;
+  display: none;
+  margin-top: 2px;
+}
+
+.field.has-error input,
+.field.has-error select,
+.field.has-error textarea {
+  border-color: var(--ember);
+}
+
+.field.has-error .field-err { display: block; }
+
+/* ══ REQUIRED BADGE ══ */
+.req-note {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.58rem;
+  color: var(--muted2);
+  letter-spacing: 1px;
+  margin-bottom: 20px;
+}
+
+.req-note span { color: var(--ember); }
+
+/* ══ SECTION BREAK LABEL ══ */
+.sec-break {
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--plasma);
+  padding: 6px 0;
+  margin: 6px 0 14px;
+  border-bottom: 1px solid rgba(0,255,200,0.15);
+}
+
+/* ══ FOOTER ══ */
+.site-footer {
+  border-top: 1px solid var(--border);
+  padding: 24px;
+  text-align: center;
+  font-family: 'Space Mono', monospace;
+  font-size: 0.6rem;
+  color: var(--muted2);
+  letter-spacing: 1.5px;
+  line-height: 2;
+}
+
+@media (max-width: 560px) {
+  .form-card { padding: 20px 16px; }
+  .progress-shell { padding: 20px 16px 0; }
+  .app-container { padding: 20px 16px 50px; }
+  .step-label { display: none; }
+  .step-circle { width: 30px; height: 30px; font-size: 0.62rem; }
+  .upload-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ HEADER ═══════════ -->
+<header class="site-header">
+  <div class="header-hex">
+    <div class="header-glow"></div>
+    <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="32,4 60,20 60,44 32,60 4,44 4,20" stroke="#c9a84c" stroke-width="2" fill="rgba(201,168,76,0.06)"/>
+      <polygon points="32,14 50,24 50,40 32,50 14,40 14,24" stroke="#c9a84c" stroke-width="1" stroke-opacity="0.4" fill="none"/>
+      <circle cx="32" cy="32" r="6" fill="#c9a84c"/>
+      <line x1="32" y1="4" x2="32" y2="26" stroke="#c9a84c" stroke-width="1.5"/>
+      <line x1="32" y1="38" x2="32" y2="60" stroke="#c9a84c" stroke-width="1.5"/>
+    </svg>
+  </div>
+  <div class="company-label">Established · Jamaica</div>
+  <div class="company-name">Future Force Financial</div>
+  <div class="company-sub">Half Way Tree · Saint Andrew · Jamaica</div>
+  <div class="header-title">Personal Loan Application</div>
+  <p class="header-desc">Complete all sections accurately and honestly. Upload clear, legible photos of all required documents. Incomplete applications will not be processed.</p>
+</header>
+
+<!-- ═══════════ PROGRESS ═══════════ -->
+<div class="progress-shell">
+  <div class="progress-steps" id="progress-steps">
+    <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    <div class="step-node active" data-step="1">
+      <div class="step-circle">1</div>
+      <div class="step-label">Personal<br/>Info</div>
+    </div>
+    <div class="step-node" data-step="2">
+      <div class="step-circle">2</div>
+      <div class="step-label">Address &amp;<br/>Property</div>
+    </div>
+    <div class="step-node" data-step="3">
+      <div class="step-circle">3</div>
+      <div class="step-label">Employment<br/>&amp; Income</div>
+    </div>
+    <div class="step-node" data-step="4">
+      <div class="step-circle">4</div>
+      <div class="step-label">Loan<br/>Details</div>
+    </div>
+    <div class="step-node" data-step="5">
+      <div class="step-circle">5</div>
+      <div class="step-label">Guarantor<br/>Info</div>
+    </div>
+    <div class="step-node" data-step="6">
+      <div class="step-circle">6</div>
+      <div class="step-label">Documents<br/>&amp; Photos</div>
+    </div>
+    <div class="step-node" data-step="7">
+      <div class="step-circle">7</div>
+      <div class="step-label">Review &amp;<br/>Submit</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main class="app-container">
+
+  <!-- ════ STEP 1 — PERSONAL INFO ════ -->
+  <div class="form-step active" id="step-1">
+    <div class="step-header">
+      <div class="step-num">Step 01 of 07</div>
+      <div class="step-title">Personal Information</div>
+      <div class="step-sub">Tell us who you are. All fields marked * are required.</div>
+    </div>
+    <p class="req-note"><span>*</span> Required field</p>
+
+    <div class="form-card">
+      <div class="card-title">Full Name &amp; Identity</div>
+      <div class="field-grid fg-3">
+        <div class="field required">
+          <label>First Name</label>
+          <input type="text" id="p-fn" placeholder="e.g. Marcus" />
+          <span class="field-err">First name is required</span>
+        </div>
+        <div class="field">
+          <label>Middle Name</label>
+          <input type="text" id="p-mn" placeholder="e.g. Devon" />
+        </div>
+        <div class="field required">
+          <label>Last Name</label>
+          <input type="text" id="p-ln" placeholder="e.g. Campbell" />
+          <span class="field-err">Last name is required</span>
+        </div>
+        <div class="field">
+          <label>Nickname / Pet Name</label>
+          <input type="text" id="p-nick" placeholder="What people call you" />
+        </div>
+        <div class="field required">
+          <label>Date of Birth</label>
+          <input type="date" id="p-dob" />
+          <span class="field-err">Date of birth is required</span>
+        </div>
+        <div class="field">
+          <label>Gender</label>
+          <select id="p-gender">
+            <option value="">Select…</option>
+            <option>Male</option>
+            <option>Female</option>
+            <option>Prefer not to say</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="card-title">Contact Details</div>
+      <div class="field-grid fg-2">
+        <div class="field required">
+          <label>Digicel Number</label>
+          <input type="tel" id="p-dig" placeholder="e.g. 876-XXX-XXXX" />
+          <span class="field-err">At least one phone number is required</span>
+        </div>
+        <div class="field">
+          <label>Flow Number</label>
+          <input type="tel" id="p-flow" placeholder="e.g. 876-XXX-XXXX" />
+        </div>
+        <div class="field">
+          <label>Email Address</label>
+          <input type="email" id="p-email" placeholder="your@email.com" />
+        </div>
+        <div class="field">
+          <label>WhatsApp Number</label>
+          <input type="tel" id="p-whatsapp" placeholder="If different from above" />
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="card-title">Existing Loans (Other Lenders)</div>
+      <div class="notice-box">
+        <strong>Honesty is required.</strong> Failure to disclose existing loans is grounds for immediate rejection or cancellation of any approved loan.
+      </div>
+      <div class="field-grid fg-2">
+        <div class="field">
+          <label>Do you have other loans?</label>
+          <div class="radio-group">
+            <div class="radio-pill"><input type="radio" name="has-loans" id="hl-yes" value="yes"/><label for="hl-yes">Yes</label></div>
+            <div class="radio-pill"><input type="radio" name="has-loans" id="hl-no" value="no" checked/><label for="hl-no">No</label></div>
+          </div>
+        </div>
+        <div class="field">
+          <label># of Other Loans</label>
+          <input type="number" id="p-loan-count" min="0" step="1" value="0" placeholder="0" />
+        </div>
+        <div class="field">
+          <label>Who are you borrowing from?</label>
+          <input type="text" id="p-loan-who" placeholder="e.g. NCB, JN, Miss Brown…" />
+        </div>
+        <div class="field">
+          <label>Total Amount Owed Elsewhere (J$)</label>
+          <input type="number" id="p-loan-total" min="0" step="0.01" placeholder="0.00" />
+        </div>
+        <div class="field span-2">
+          <label>Additional Notes on Other Loans</label>
+          <input type="text" id="p-loan-notes" placeholder="Any relevant details…" />
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <div></div>
+      <button class="btn btn-next" onclick="goNext(1)">Next — Address &amp; Property →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 2 — ADDRESS & PROPERTY ════ -->
+  <div class="form-step" id="step-2">
+    <div class="step-header">
+      <div class="step-num">Step 02 of 07</div>
+      <div class="step-title">Address &amp; Property</div>
+      <div class="step-sub">Where you live and what your home looks like.</div>
+    </div>
+
+    <div class="form-card">
+      <div class="card-title">Home Address</div>
+      <div class="field-grid fg-2">
+        <div class="field required span-2">
+          <label>Full Home Address</label>
+          <input type="text" id="h-addr" placeholder="Lot #, Street, Community, District, Parish" />
+          <span class="field-err">Home address is required</span>
+        </div>
+        <div class="field">
+          <label>Parish</label>
+          <select id="h-parish">
+            <option value="">Select Parish…</option>
+            <option>Kingston</option>
+            <option>Saint Andrew</option>
+            <option>Saint Thomas</option>
+            <option>Portland</option>
+            <option>Saint Mary</option>
+            <option>Saint Ann</option>
+            <option>Trelawny</option>
+            <option>Saint James</option>
+            <option>Hanover</option>
+            <option>Westmoreland</option>
+            <option>Saint Elizabeth</option>
+            <option>Manchester</option>
+            <option>Clarendon</option>
+            <option>Saint Catherine</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>How long at this address?</label>
+          <input type="text" id="h-duration" placeholder="e.g. 3 years, 6 months" />
+        </div>
+        <div class="field">
+          <label>Landmark / Directions</label>
+          <input type="text" id="h-landmark" placeholder="Nearest landmark or direction hint" />
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="card-title">Property Details</div>
+      <div class="field-grid fg-2">
+        <div class="field required">
+          <label>Type of Dwelling</label>
+          <div class="radio-group" style="flex-wrap:wrap;">
+            <div class="radio-pill"><input type="radio" name="h-type" id="ht-own" value="owner"/><label for="ht-own">Owner Occupied</label></div>
+            <div class="radio-pill"><input type="radio" name="h-type" id="ht-rent" value="rental"/><label for="ht-rent">Rental</label></div>
+            <div class="radio-pill"><input type="radio" name="h-type" id="ht-fam" value="family"/><label for="ht-fam">Family Property</label></div>
+            <div class="radio-pill"><input type="radio" name="h-type" id="ht-room" value="room"/><label for="ht-room">Renting a Room</label></div>
+            <div class="radio-pill"><input type="radio" name="h-type" id="ht-sq" value="squatting"/><label for="ht-sq">Squatting</label></div>
+            <div class="radio-pill"><input type="radio" name="h-type" id="ht-oth" value="other"/><label for="ht-oth">Other</label></div>
+          </div>
+          <span class="field-err">Please select dwelling type</span>
+        </div>
+        <div class="field">
+          <label>Building Material</label>
+          <div class="radio-group">
+            <div class="radio-pill"><input type="radio" name="h-mat" id="hm-con" value="concrete"/><label for="hm-con">Concrete</label></div>
+            <div class="radio-pill"><input type="radio" name="h-mat" id="hm-wood" value="wood"/><label for="hm-wood">Wood</label></div>
+            <div class="radio-pill"><input type="radio" name="h-mat" id="hm-mix" value="mixed"/><label for="hm-mix">Mixed</label></div>
+            <div class="radio-pill"><input type="radio" name="h-mat" id="hm-zinc" value="zinc"/><label for="hm-zinc">Zinc / Board</label></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Colour of Building</label>
+          <input type="text" id="h-color" placeholder="e.g. Yellow &amp; White, Blue" />
+        </div>
+        <div class="field">
+          <label>Monthly Rent (if applicable)</label>
+          <input type="number" id="h-rent" min="0" step="0.01" placeholder="J$ 0.00" />
+        </div>
+        <div class="field span-2">
+          <label>Additional Property Notes</label>
+          <input type="text" id="h-notes" placeholder="Any other identifying info about the property" />
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-prev" onclick="goStep(1)">← Back</button>
+      <button class="btn btn-next" onclick="goNext(2)">Next — Employment →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 3 — EMPLOYMENT & INCOME ════ -->
+  <div class="form-step" id="step-3">
+    <div class="step-header">
+      <div class="step-num">Step 03 of 07</div>
+      <div class="step-title">Employment &amp; Income</div>
+      <div class="step-sub">Your source of income — employed, self-employed, or other.</div>
+    </div>
+
+    <div class="form-card">
+      <div class="card-title">Employment Type</div>
+      <div class="field">
+        <label>Employment Status</label>
+        <div class="radio-group">
+          <div class="radio-pill"><input type="radio" name="emp-type" id="et-emp" value="employed" checked/><label for="et-emp">Employed</label></div>
+          <div class="radio-pill"><input type="radio" name="emp-type" id="et-self" value="self-employed"/><label for="et-self">Self-Employed</label></div>
+          <div class="radio-pill"><input type="radio" name="emp-type" id="et-ret" value="retired"/><label for="et-ret">Retired</label></div>
+          <div class="radio-pill"><input type="radio" name="emp-type" id="et-unemp" value="unemployed"/><label for="et-unemp">Not Currently Employed</label></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="card-title">Employer / Business Details</div>
+      <div class="field-grid fg-2">
+        <div class="field">
+          <label>Employer / Business Name</label>
+          <input type="text" id="e-name" placeholder="Company or business name" />
+        </div>
+        <div class="field">
+          <label>Job Title / Occupation</label>
+          <input type="text" id="e-title" placeholder="e.g. Nurse, Driver, Vendor" />
+        </div>
+        <div class="field span-2">
+          <label>Work / Business Address</label>
+          <input type="text" id="e-addr" placeholder="Full address of workplace or business" />
+        </div>
+        <div class="field">
+          <label>Employer / HR Contact Number</label>
+          <input type="tel" id="e-contact" placeholder="Supervisor or HR phone" />
+        </div>
+        <div class="field">
+          <label>Length of Employment / Business</label>
+          <input type="text" id="e-duration" placeholder="e.g. 2 years, 8 months" />
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="card-title">Income</div>
+      <div class="field-grid fg-2">
+        <div class="field required">
+          <label>Monthly Net Income (J$)</label>
+          <input type="number" id="e-income" min="0" step="0.01" placeholder="Take-home pay per month" />
+          <span class="field-err">Monthly income is required</span>
+        </div>
+        <div class="field">
+          <label>Pay Frequency</label>
+          <div class="radio-group">
+            <div class="radio-pill"><input type="radio" name="pay-freq" id="pf-w" value="weekly"/><label for="pf-w">Weekly</label></div>
+            <div class="radio-pill"><input type="radio" name="pay-freq" id="pf-bw" value="biweekly"/><label for="pf-bw">Bi-Weekly</label></div>
+            <div class="radio-pill"><input type="radio" name="pay-freq" id="pf-m" value="monthly" checked/><label for="pf-m">Monthly</label></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Other Income Sources</label>
+          <input type="text" id="e-other-income" placeholder="e.g. side hustle, rental income" />
+        </div>
+        <div class="field">
+          <label>Monthly Expenses (J$)</label>
+          <input type="number" id="e-expenses" min="0" step="0.01" placeholder="Rent, bills, food, etc." />
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-prev" onclick="goStep(2)">← Back</button>
+      <button class="btn btn-next" onclick="goNext(3)">Next — Loan Details →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 4 — LOAN DETAILS ════ -->
+  <div class="form-step" id="step-4">
+    <div class="step-header">
+      <div class="step-num">Step 04 of 07</div>
+      <div class="step-title">Loan Details</div>
+      <div class="step-sub">Tell us how much you need and what you need it for.</div>
+    </div>
+
+    <div class="notice-box">
+      <strong>Registration fee of J$2,500</strong> is required on all approved loans. This is non-refundable and deducted from your first disbursement.
+    </div>
+
+    <div class="form-card">
+      <div class="card-title">Loan Request</div>
+      <div class="field-grid fg-2">
+        <div class="field required">
+          <label>Loan Amount Requested (J$)</label>
+          <input type="number" id="l-amount" min="1000" step="100" placeholder="e.g. 50000" oninput="calcLoan()" />
+          <span class="field-err">Loan amount is required</span>
+        </div>
+        <div class="field">
+          <label>Repayment Period</label>
+          <div class="radio-group">
+            <div class="radio-pill"><input type="radio" name="l-term" id="lt-1" value="1"/><label for="lt-1">1 Month</label></div>
+            <div class="radio-pill"><input type="radio" name="l-term" id="lt-2" value="2"/><label for="lt-2">2 Months</label></div>
+            <div class="radio-pill"><input type="radio" name="l-term" id="lt-3" value="3" checked/><label for="lt-3">3 Months</label></div>
+            <div class="radio-pill"><input type="radio" name="l-term" id="lt-6" value="6"/><label for="lt-6">6 Months</label></div>
+          </div>
+        </div>
+        <div class="field required span-2">
+          <label>Purpose of Loan</label>
+          <textarea id="l-purpose" placeholder="Explain exactly what you need this loan for. Be specific and honest."></textarea>
+          <span class="field-err">Purpose is required</span>
+        </div>
+        <div class="field">
+          <label>Preferred Repayment Frequency</label>
+          <div class="radio-group">
+            <div class="radio-pill"><input type="radio" name="l-freq" id="lf-w" value="weekly"/><label for="lf-w">Weekly</label></div>
+            <div class="radio-pill"><input type="radio" name="l-freq" id="lf-bw" value="biweekly"/><label for="lf-bw">Bi-Weekly</label></div>
+            <div class="radio-pill"><input type="radio" name="l-freq" id="lf-m" value="monthly" checked/><label for="lf-m">Monthly</label></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Have you borrowed from FFF before?</label>
+          <div class="radio-group">
+            <div class="radio-pill"><input type="radio" name="prior-fff" id="pf-y" value="yes"/><label for="pf-y">Yes</label></div>
+            <div class="radio-pill"><input type="radio" name="prior-fff" id="pf-n" value="no" checked/><label for="pf-n">No</label></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="calc-box" id="calc-box" style="display:none;">
+        <div class="calc-row">
+          <span class="c-label">Principal Requested</span>
+          <span class="c-val" id="calc-principal">—</span>
+        </div>
+        <div class="calc-row">
+          <span class="c-label">Interest (15% — indicative)</span>
+          <span class="c-val" id="calc-interest">—</span>
+        </div>
+        <div class="calc-row">
+          <span class="c-label">Registration Fee</span>
+          <span class="c-val">J$2,500.00</span>
+        </div>
+        <div class="calc-row total">
+          <span class="c-label">Estimated Total Repayment</span>
+          <span class="c-val" id="calc-total">—</span>
+        </div>
+        <p style="font-size:0.72rem;color:var(--muted);margin-top:10px;font-style:italic;">* Indicative only. Final terms set by FFF upon approval. Interest rate may vary based on assessment.</p>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-prev" onclick="goStep(3)">← Back</button>
+      <button class="btn btn-next" onclick="goNext(4)">Next — Guarantor →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 5 — GUARANTOR ════ -->
+  <div class="form-step" id="step-5">
+    <div class="step-header">
+      <div class="step-num">Step 05 of 07</div>
+      <div class="step-title">Guarantor Information</div>
+      <div class="step-sub">Your guarantor is legally responsible for your loan if you default. They must be aware they are listed.</div>
+    </div>
+
+    <div class="notice-box">
+      <strong>Important:</strong> Your guarantor must be informed that they are acting as guarantor. By submitting this application you confirm your guarantor has agreed to this role.
+    </div>
+
+    <div class="form-card">
+      <div class="card-title">Guarantor Personal Details</div>
+      <div class="field-grid fg-3">
+        <div class="field required">
+          <label>Guarantor Full Name</label>
+          <input type="text" id="g-name" placeholder="First &amp; Last Name" />
+          <span class="field-err">Guarantor name is required</span>
+        </div>
+        <div class="field">
+          <label>Nickname / Pet Name</label>
+          <input type="text" id="g-nick" placeholder="What they go by" />
+        </div>
+        <div class="field">
+          <label>Relationship to Applicant</label>
+          <input type="text" id="g-rel" placeholder="e.g. Spouse, Parent, Sibling, Friend" />
+        </div>
+        <div class="field required">
+          <label>Guarantor Digicel</label>
+          <input type="tel" id="g-dig" placeholder="876-XXX-XXXX" />
+          <span class="field-err">Guarantor phone is required</span>
+        </div>
+        <div class="field">
+          <label>Guarantor Flow</label>
+          <input type="tel" id="g-flow" placeholder="876-XXX-XXXX" />
+        </div>
+        <div class="field">
+          <label>Guarantor Email</label>
+          <input type="email" id="g-email" placeholder="guarantor@email.com" />
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="card-title">Guarantor Address &amp; Property</div>
+      <div class="field-grid fg-2">
+        <div class="field required span-2">
+          <label>Guarantor Home Address</label>
+          <input type="text" id="g-addr" placeholder="Lot #, Street, Community, Parish" />
+          <span class="field-err">Guarantor address is required</span>
+        </div>
+        <div class="field">
+          <label>Home Colour</label>
+          <input type="text" id="g-color" placeholder="e.g. Green &amp; White" />
+        </div>
+        <div class="field">
+          <label>Building Material</label>
+          <div class="radio-group">
+            <div class="radio-pill"><input type="radio" name="g-mat" id="gm-con" value="concrete"/><label for="gm-con">Concrete</label></div>
+            <div class="radio-pill"><input type="radio" name="g-mat" id="gm-wood" value="wood"/><label for="gm-wood">Wood</label></div>
+            <div class="radio-pill"><input type="radio" name="g-mat" id="gm-mix" value="mixed"/><label for="gm-mix">Mixed</label></div>
+            <div class="radio-pill"><input type="radio" name="g-mat" id="gm-zinc" value="zinc"/><label for="gm-zinc">Zinc</label></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Dwelling Type</label>
+          <div class="radio-group" style="flex-wrap:wrap;">
+            <div class="radio-pill"><input type="radio" name="g-dtype" id="gd-own" value="owner"/><label for="gd-own">Owner</label></div>
+            <div class="radio-pill"><input type="radio" name="g-dtype" id="gd-rent" value="rental"/><label for="gd-rent">Rental</label></div>
+            <div class="radio-pill"><input type="radio" name="g-dtype" id="gd-fam" value="family"/><label for="gd-fam">Family</label></div>
+            <div class="radio-pill"><input type="radio" name="g-dtype" id="gd-room" value="room"/><label for="gd-room">Room</label></div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Landmark / Directions</label>
+          <input type="text" id="g-landmark" placeholder="Nearest landmark" />
+        </div>
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="card-title">Guarantor Employment</div>
+      <div class="field-grid fg-2">
+        <div class="field">
+          <label>Employer / Business Name</label>
+          <input type="text" id="g-employer" placeholder="Where they work" />
+        </div>
+        <div class="field">
+          <label>Occupation / Job Title</label>
+          <input type="text" id="g-occupation" placeholder="What they do" />
+        </div>
+        <div class="field span-2">
+          <label>Work Address</label>
+          <input type="text" id="g-work-addr" placeholder="Full work address" />
+        </div>
+        <div class="field">
+          <label>Employer Contact Number</label>
+          <input type="tel" id="g-emp-contact" placeholder="HR or supervisor" />
+        </div>
+        <div class="field">
+          <label>Guarantor Monthly Income (J$)</label>
+          <input type="number" id="g-income" min="0" step="0.01" placeholder="Approximate" />
+        </div>
+        <div class="field span-2">
+          <label>Guarantor Additional Notes</label>
+          <input type="text" id="g-notes" placeholder="Any other relevant information" />
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-prev" onclick="goStep(3)">← Back</button>
+      <button class="btn btn-next" onclick="goNext(5)">Next — Documents →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 6 — DOCUMENTS & PHOTOS ════ -->
+  <div class="form-step" id="step-6">
+    <div class="step-header">
+      <div class="step-num">Step 06 of 07</div>
+      <div class="step-title">Documents &amp; Photos</div>
+      <div class="step-sub">Upload clear, well-lit photos. Blurry or unreadable images will delay your application.</div>
+    </div>
+
+    <div class="notice-box">
+      <strong>Photo tips:</strong> Use good lighting. Ensure all text is readable. Hold documents flat. File types: JPG, PNG, HEIC, PDF. Max 10MB per file.
+    </div>
+
+    <!-- APPLICANT ID -->
+    <div class="form-card">
+      <div class="card-title">Applicant — Government-Issued ID</div>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;line-height:1.6;">Upload one valid, unexpired government photo ID. Accepted: National ID, Passport, Driver's Licence, Voter's ID.</p>
+      <div class="upload-grid">
+        <div>
+          <div class="upload-zone" id="uz-id-front" onclick="triggerUpload('u-id-front', 'uz-id-front', 'img-id-front', 'fn-id-front')">
+            <input type="file" id="u-id-front" accept="image/*,.pdf" />
+            <span class="upload-icon">🪪</span>
+            <div class="upload-title">ID — Front</div>
+            <div class="upload-hint">Passport · Driver's Licence<br/>National ID · Voter's ID</div>
+            <div class="upload-preview" id="img-id-front"><button class="remove-img" onclick="removeUpload(event,'u-id-front','uz-id-front','img-id-front','fn-id-front')">✕</button><img src="" alt=""/></div>
+            <div class="upload-filename" id="fn-id-front"></div>
+          </div>
+        </div>
+        <div>
+          <div class="upload-zone" id="uz-id-back" onclick="triggerUpload('u-id-back', 'uz-id-back', 'img-id-back', 'fn-id-back')">
+            <input type="file" id="u-id-back" accept="image/*,.pdf" />
+            <span class="upload-icon">🪪</span>
+            <div class="upload-title">ID — Back</div>
+            <div class="upload-hint">Rear of ID card<br/>(if applicable)</div>
+            <div class="upload-preview" id="img-id-back"><button class="remove-img" onclick="removeUpload(event,'u-id-back','uz-id-back','img-id-back','fn-id-back')">✕</button><img src="" alt=""/></div>
+            <div class="upload-filename" id="fn-id-back"></div>
+          </div>
+        </div>
+        <div>
+          <div class="upload-zone" id="uz-selfie" onclick="triggerUpload('u-selfie', 'uz-selfie', 'img-selfie', 'fn-selfie')">
+            <input type="file" id="u-selfie" accept="image/*" capture="user" />
+            <span class="upload-icon">📸</span>
+            <div class="upload-title">Photo of Applicant</div>
+            <div class="upload-hint">Clear face photo<br/>No sunglasses or hat</div>
+            <div class="upload-preview" id="img-selfie"><button class="remove-img" onclick="removeUpload(event,'u-selfie','uz-selfie','img-selfie','fn-selfie')">✕</button><img src="" alt=""/></div>
+            <div class="upload-filename" id="fn-selfie"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROOF OF ADDRESS -->
+    <div class="form-card">
+      <div class="card-title">Proof of Address</div>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;line-height:1.6;">Accepted: Utility bill (JPS, NWC), bank statement, lease/rental agreement — dated within 3 months. Must show your name and address.</p>
+      <div class="upload-grid">
+        <div>
+          <div class="upload-zone" id="uz-addr-proof" onclick="triggerUpload('u-addr-proof','uz-addr-proof','img-addr-proof','fn-addr-proof')">
+            <input type="file" id="u-addr-proof" accept="image/*,.pdf" />
+            <span class="upload-icon">🏠</span>
+            <div class="upload-title">Proof of Address</div>
+            <div class="upload-hint">Utility bill · Bank statement<br/>Lease agreement</div>
+            <div class="upload-preview" id="img-addr-proof"><button class="remove-img" onclick="removeUpload(event,'u-addr-proof','uz-addr-proof','img-addr-proof','fn-addr-proof')">✕</button><img src="" alt=""/></div>
+            <div class="upload-filename" id="fn-addr-proof"></div>
+          </div>
+        </div>
+        <div>
+          <div class="upload-zone" id="uz-dwelling" onclick="triggerUpload('u-dwelling','uz-dwelling','img-dwelling','fn-dwelling')">
+            <input type="file" id="u-dwelling" accept="image/*" />
+            <span class="upload-icon">🏚️</span>
+            <div class="upload-title">Photo of Dwelling</div>
+            <div class="upload-hint">Outside of your home<br/>Clearly visible</div>
+            <div class="upload-preview" id="img-dwelling"><button class="remove-img" onclick="removeUpload(event,'u-dwelling','uz-dwelling','img-dwelling','fn-dwelling')">✕</button><img src="" alt=""/></div>
+            <div class="upload-filename" id="fn-dwelling"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROOF OF INCOME -->
+    <div class="form-card">
+      <div class="card-title">Proof of Income</div>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;line-height:1.6;">Upload at least one income document. Employed: payslip (recent). Self-employed: photo of business premises, stall, tools or equipment.</p>
+      <div class="upload-grid">
+        <div>
+          <div class="upload-zone" id="uz-payslip" onclick="triggerUpload('u-payslip','uz-payslip','img-payslip','fn-payslip')">
+            <input type="file" id="u-payslip" accept="image/*,.pdf" />
+            <span class="upload-icon">📄</span>
+            <div class="upload-title">Recent Payslip</div>
+            <div class="upload-hint">Most recent pay stub<br/>Must show name &amp; amount</div>
+            <div class="upload-preview" id="img-payslip"><button class="remove-img" onclick="removeUpload(event,'u-payslip','uz-payslip','img-payslip','fn-payslip')">✕</button><img src="" alt=""/></div>
+            <div class="upload-filename" id="fn-payslip"></div>
+          </div>
+        </div>
+        <div>
+          <div class="upload-zone" id="uz-biz-place" onclick="triggerUpload('u-biz-place','uz-biz-place','img-biz-place','fn-biz-place')">
+            <input type="file" id="u-biz-place" accept="image/*" />
+            <span class="upload-icon">🏪</span>
+            <div class="upload-title">Business / Stall Photo</div>
+            <div class="upload-hint">Your shop, stall or<br/>place of business</div>
+            <div class="upload-preview" id="img-biz-place"><button class="remove-img" onclick="removeUpload(event,'u-biz-place','uz-biz-place','img-biz-place','fn-biz-place')">✕</button><img src="" alt=""/></div>
+            <div class="upload-filename" id="fn-biz-place"></div>
+          </div>
+        </div>
+        <div>
+          <div class="upload-zone" id="uz-tools" onclick="triggerUpload('u-tools','uz-tools','img-tools','fn-tools')">
+            <input type="file" id="u-tools" accept="image/*" />
+            <span class="upload-icon">🔧</span>
+            <div class="upload-title">Tools / Equipment</div>
+            <div class="upload-hint">Work tools or equipment<br/>that show your trade</div>
+            <div class="upload-preview" id="img-tools"><button class="remove-img" onclick="removeUpload(event,'u-tools','uz-tools','img-tools','fn-tools')">✕</button><img src="" alt=""/></div>
+            <div class="upload-filename" id="fn-tools"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- GUARANTOR DOCS -->
+    <div class="form-card">
+      <div class="card-title">Guarantor Documents &amp; Photo</div>
+      <p style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;line-height:1.6;">Your guarantor's ID and a clear photo of them. Same ID types accepted as applicant ID above.</p>
+      <div class="upload-grid">
+        <div>
+          <div class="upload-zone" id="uz-g-id" onclick="triggerUpload('u-g-id','uz-g-id','img-g-id','fn-g-id')">
+            <input type="file" id="u-g-id" accept="image/*,.pdf" />
+            <span class="upload-icon">🪪</span>
+            <div class="upload-title">Guarantor ID</div>
+            <div class="upload-hint">Valid government photo ID<br/>Front side</div>
+            <div class="upload-preview" id="img-g-id"><button class="remove-img" onclick="removeUpload(event,'u-g-id','uz-g-id','img-g-id','fn-g-id')">✕</button><img src="" alt=""/></div>
+            <div class="upload-filename" id="fn-g-id"></div>
+          </div>
+        </div>
+        <div>
+          <div class="upload-zone" id="uz-g-selfie" onclick="triggerUpload('u-g-selfie','uz-g-selfie','img-g-selfie','fn-g-selfie')">
+            <input type="file" id="u-g-selfie" accept="image/*" />
+            <span class="upload-icon">👤</span>
+            <div class="upload-title">Photo of Guarantor</div>
+            <div class="upload-hint">Clear face photo<br/>No sunglasses or hat</div>
+            <div class="upload-preview" id="img-g-selfie"><button class="remove-img" onclick="removeUpload(event,'u-g-selfie','uz-g-selfie','img-g-selfie','fn-g-selfie')">✕</button><img src="" alt=""/></div>
+            <div class="upload-filename" id="fn-g-selfie"></div>
+          </div>
+        </div>
+        <div>
+          <div class="upload-zone" id="uz-g-dwelling" onclick="triggerUpload('u-g-dwelling','uz-g-dwelling','img-g-dwelling','fn-g-dwelling')">
+            <input type="file" id="u-g-dwelling" accept="image/*" />
+            <span class="upload-icon">🏚️</span>
+            <div class="upload-title">Guarantor's Dwelling</div>
+            <div class="upload-hint">Outside photo of<br/>guarantor's home</div>
+            <div class="upload-preview" id="img-g-dwelling"><button class="remove-img" onclick="removeUpload(event,'u-g-dwelling','uz-g-dwelling','img-g-dwelling','fn-g-dwelling')">✕</button><img src="" alt=""/></div>
+            <div class="upload-filename" id="fn-g-dwelling"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-prev" onclick="goStep(4)">← Back</button>
+      <button class="btn btn-next" onclick="goNext(6)">Next — Review &amp; Submit →</button>
+    </div>
+  </div>
+
+  <!-- ════ STEP 7 — REVIEW & SUBMIT ════ -->
+  <div class="form-step" id="step-7">
+    <div class="step-header">
+      <div class="step-num">Step 07 of 07</div>
+      <div class="step-title">Review &amp; Submit</div>
+      <div class="step-sub">Check your information before submitting. You may go back to correct any errors.</div>
+    </div>
+
+    <div class="form-card" id="review-panel">
+      <div class="card-title">Application Summary</div>
+      <div id="review-content" style="font-size:0.9rem;line-height:1.8;color:var(--text);">
+        <!-- populated by JS -->
+      </div>
+    </div>
+
+    <div class="form-card">
+      <div class="card-title">Declaration &amp; Consent</div>
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <label class="check-field">
+          <input type="checkbox" id="dec-truth" />
+          <span>I declare that all information provided in this application is true, accurate, and complete. I understand that providing false information is grounds for immediate rejection and may result in legal action.</span>
+        </label>
+        <label class="check-field">
+          <input type="checkbox" id="dec-guarantor" />
+          <span>I confirm that my guarantor has been informed of and consented to their role in this loan application.</span>
+        </label>
+        <label class="check-field">
+          <input type="checkbox" id="dec-terms" />
+          <span>I agree to the terms and conditions of Future Force Financial, including the <strong style="color:var(--gold);">15% simple interest rate</strong>, <strong style="color:var(--gold);">J$2,500 non-refundable registration fee</strong>, and late fee policy. I understand this is an application and not a guarantee of approval.</span>
+        </label>
+        <label class="check-field">
+          <input type="checkbox" id="dec-contact" />
+          <span>I consent to Future Force Financial contacting me, my employer, and my guarantor for the purpose of verifying this application and managing any approved loan.</span>
+        </label>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn btn-prev" onclick="goStep(6)">← Back</button>
+      <button class="btn btn-submit" id="submit-btn" onclick="submitApplication()">
+        ✦ Submit Application
+      </button>
+    </div>
+  </div>
+
+  <!-- ════ SUCCESS SCREEN ════ -->
+  <div id="success-screen">
+    <div class="success-hex">✦</div>
+    <div class="success-title">Application Submitted</div>
+    <div class="success-ref" id="success-ref">REF: FFF-000000</div>
+    <p class="success-body">
+      Thank you. Your application has been received by Future Force Financial.<br/><br/>
+      <strong style="color:var(--text);">Next steps:</strong> Our team will review your information and contact you within <strong style="color:var(--gold);">1–2 business days</strong> on the number you provided.<br/><br/>
+      Please keep your phone accessible. If you do not hear from us within 48 hours, contact us directly at Half Way Tree, Saint Andrew.
+    </p>
+    <div style="margin-top:32px;">
+      <button class="btn btn-next" onclick="location.reload()">Submit Another Application</button>
+    </div>
+  </div>
+
+</main>
+
+<!-- ═══════════ FOOTER ═══════════ -->
+<footer class="site-footer">
+  <div>FUTURE FORCE FINANCIAL · HALF WAY TREE · SAINT ANDREW · JAMAICA</div>
+  <div>All applications subject to assessment and approval. Not all applicants will qualify.</div>
+  <div style="margin-top:6px;color:var(--muted2);">© 2026 Future Force Financial · By C. Hamilton Dzigns</div>
+</footer>
+
+<script>
+'use strict';
+
+/* ══ STEP NAVIGATION ══ */
+const TOTAL_STEPS = 7;
+let currentStep = 1;
+
+function goStep(n) {
+  document.getElementById(`step-${currentStep}`)?.classList.remove('active');
+  currentStep = n;
+  document.getElementById(`step-${n}`)?.classList.add('active');
+  updateProgress(n);
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function goNext(from) {
+  if (!validateStep(from)) return;
+  if (from === 7 - 1 || from === 6) buildReview();
+  goStep(from + 1);
+}
+
+function updateProgress(step) {
+  document.querySelectorAll('.step-node').forEach((node, i) => {
+    const s = i + 1;
+    node.classList.remove('active', 'done');
+    if (s === step) node.classList.add('active');
+    else if (s < step) node.classList.add('done');
+  });
+  const pct = ((step - 1) / (TOTAL_STEPS - 1)) * 100;
+  document.getElementById('progress-fill').style.width = pct + '%';
+}
+
+/* ══ VALIDATION ══ */
+function validateStep(step) {
+  let valid = true;
+
+  const required = {
+    1: ['p-fn','p-ln','p-dig'],
+    2: ['h-addr'],
+    3: ['e-income'],
+    4: ['l-amount','l-purpose'],
+    5: ['g-name','g-dig','g-addr'],
+    6: [],
+    7: []
+  };
+
+  // Clear previous errors
+  document.querySelectorAll('.field.has-error').forEach(f => f.classList.remove('has-error'));
+
+  (required[step] || []).forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    if (!el.value.trim()) {
+      el.closest('.field')?.classList.add('has-error');
+      valid = false;
+    }
+  });
+
+  // Step 2 — need dwelling type selected
+  if (step === 2) {
+    const typeChecked = document.querySelector('input[name="h-type"]:checked');
+    if (!typeChecked) {
+      document.querySelector('.field.required:has(input[name="h-type"])')?.classList.add('has-error');
+      valid = false;
+    }
+  }
+
+  if (!valid) {
+    const firstErr = document.querySelector('.field.has-error');
+    firstErr?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    firstErr?.querySelector('input,select,textarea')?.focus();
+  }
+
+  return valid;
+}
+
+/* ══ LOAN CALCULATOR ══ */
+function calcLoan() {
+  const amt = Number(document.getElementById('l-amount').value || 0);
+  const box = document.getElementById('calc-box');
+  if (amt <= 0) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  const interest = amt * 0.15;
+  const reg = 2500;
+  const total = amt + interest + reg;
+  document.getElementById('calc-principal').textContent = `J$${fmt(amt)}`;
+  document.getElementById('calc-interest').textContent  = `J$${fmt(interest)}`;
+  document.getElementById('calc-total').textContent     = `J$${fmt(total)}`;
+}
+
+function fmt(n) {
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+
+/* ══ UPLOAD SYSTEM ══ */
+function triggerUpload(inputId, zoneId, previewId, filenameId) {
+  // Prevent double-trigger from input's own click
+  document.getElementById(inputId).click();
+}
+
+// Attach change listeners to all file inputs
+document.querySelectorAll('.upload-zone input[type="file"]').forEach(input => {
+  input.addEventListener('change', function(e) {
+    e.stopPropagation();
+    const file = this.files[0];
+    if (!file) return;
+    const zoneId   = this.closest('.upload-zone').id;
+    const previewId= 'img-' + zoneId.replace('uz-','');
+    const fnId     = 'fn-' + zoneId.replace('uz-','');
+    handleFile(file, zoneId, previewId, fnId);
+  });
+
+  // Drag and drop
+  const zone = input.closest('.upload-zone');
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('dragover'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('dragover'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault();
+    zone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (!file) return;
+    const zoneId   = zone.id;
+    const previewId= 'img-' + zoneId.replace('uz-','');
+    const fnId     = 'fn-' + zoneId.replace('uz-','');
+    handleFile(file, zoneId, previewId, fnId);
+  });
+});
+
+function handleFile(file, zoneId, previewId, fnId) {
+  if (file.size > 10 * 1024 * 1024) {
+    alert('File too large. Maximum 10MB per file.');
+    return;
+  }
+  const zone    = document.getElementById(zoneId);
+  const preview = document.getElementById(previewId);
+  const fn      = document.getElementById(fnId);
+
+  zone.classList.add('has-file');
+  fn.textContent = file.name;
+
+  if (file.type.startsWith('image/')) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      preview.querySelector('img').src = e.target.result;
+      preview.classList.add('visible');
+    };
+    reader.readAsDataURL(file);
+  } else {
+    // PDF — show filename only, no preview
+    preview.classList.remove('visible');
+  }
+}
+
+window.removeUpload = function(e, inputId, zoneId, previewId, fnId) {
+  e.stopPropagation();
+  e.preventDefault();
+  document.getElementById(inputId).value = '';
+  document.getElementById(zoneId).classList.remove('has-file');
+  const preview = document.getElementById(previewId);
+  preview.classList.remove('visible');
+  preview.querySelector('img').src = '';
+  document.getElementById(fnId).textContent = '';
+};
+
+/* ══ BUILD REVIEW PANEL ══ */
+function buildReview() {
+  const r = (id, fallback) => {
+    const el = document.getElementById(id);
+    return el ? (el.value.trim() || fallback || '—') : (fallback || '—');
+  };
+  const radio = (name) => {
+    const el = document.querySelector(`input[name="${name}"]:checked`);
+    return el ? el.value : '—';
+  };
+  const file = (id) => {
+    const el = document.getElementById(id);
+    return el?.files?.[0] ? `✓ ${el.files[0].name}` : '—';
+  };
+
+  document.getElementById('review-content').innerHTML = `
+    <div class="sec-break">Personal</div>
+    <div><strong>Name:</strong> ${r('p-fn')} ${r('p-mn','')} ${r('p-ln')}</div>
+    <div><strong>Nickname:</strong> ${r('p-nick')}</div>
+    <div><strong>DOB:</strong> ${r('p-dob')}</div>
+    <div><strong>Digicel:</strong> ${r('p-dig')} &nbsp;|&nbsp; <strong>Flow:</strong> ${r('p-flow')}</div>
+    <div><strong>Email:</strong> ${r('p-email')}</div>
+    <div><strong>Other Loans:</strong> ${radio('has-loans') === 'yes' ? `Yes — ${r('p-loan-count')} loan(s) with ${r('p-loan-who')} — Total: J$${r('p-loan-total','0')}` : 'None declared'}</div>
+
+    <div class="sec-break" style="margin-top:16px;">Address &amp; Property</div>
+    <div><strong>Address:</strong> ${r('h-addr')}, ${r('h-parish')}</div>
+    <div><strong>Landmark:</strong> ${r('h-landmark')}</div>
+    <div><strong>Dwelling:</strong> ${radio('h-type')} &nbsp;|&nbsp; <strong>Material:</strong> ${radio('h-mat')} &nbsp;|&nbsp; <strong>Colour:</strong> ${r('h-color')}</div>
+
+    <div class="sec-break" style="margin-top:16px;">Employment</div>
+    <div><strong>Status:</strong> ${radio('emp-type')}</div>
+    <div><strong>Employer:</strong> ${r('e-name')} &nbsp;|&nbsp; <strong>Title:</strong> ${r('e-title')}</div>
+    <div><strong>Work Address:</strong> ${r('e-addr')}</div>
+    <div><strong>Monthly Income:</strong> J$${r('e-income')}</div>
+
+    <div class="sec-break" style="margin-top:16px;">Loan Request</div>
+    <div><strong>Amount:</strong> J$${r('l-amount')}</div>
+    <div><strong>Term:</strong> ${radio('l-term')} month(s) &nbsp;|&nbsp; <strong>Frequency:</strong> ${radio('l-freq')}</div>
+    <div><strong>Purpose:</strong> ${r('l-purpose')}</div>
+
+    <div class="sec-break" style="margin-top:16px;">Guarantor</div>
+    <div><strong>Name:</strong> ${r('g-name')} ${r('g-nick') !== '—' ? `(${r('g-nick')})` : ''}</div>
+    <div><strong>Relationship:</strong> ${r('g-rel')}</div>
+    <div><strong>Phone:</strong> ${r('g-dig')} &nbsp;|&nbsp; <strong>Email:</strong> ${r('g-email')}</div>
+    <div><strong>Address:</strong> ${r('g-addr')}</div>
+    <div><strong>Employer:</strong> ${r('g-employer')} &nbsp;|&nbsp; <strong>Contact:</strong> ${r('g-emp-contact')}</div>
+    <div><strong>Home:</strong> ${radio('g-dtype')} · ${radio('g-mat')} · ${r('g-color')}</div>
+
+    <div class="sec-break" style="margin-top:16px;">Documents Uploaded</div>
+    <div>ID Front: ${file('u-id-front')}</div>
+    <div>ID Back: ${file('u-id-back')}</div>
+    <div>Applicant Photo: ${file('u-selfie')}</div>
+    <div>Proof of Address: ${file('u-addr-proof')}</div>
+    <div>Dwelling Photo: ${file('u-dwelling')}</div>
+    <div>Payslip: ${file('u-payslip')}</div>
+    <div>Business/Stall: ${file('u-biz-place')}</div>
+    <div>Tools/Equipment: ${file('u-tools')}</div>
+    <div>Guarantor ID: ${file('u-g-id')}</div>
+    <div>Guarantor Photo: ${file('u-g-selfie')}</div>
+    <div>Guarantor Dwelling: ${file('u-g-dwelling')}</div>
+  `;
+}
+
+/* ══ SUBMIT ══ */
+function submitApplication() {
+  // Check declarations
+  const checks = ['dec-truth','dec-guarantor','dec-terms','dec-contact'];
+  const unchecked = checks.filter(id => !document.getElementById(id).checked);
+  if (unchecked.length) {
+    alert('Please check all declaration boxes before submitting.');
+    return;
+  }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true;
+  btn.textContent = 'Submitting…';
+
+  // Simulate submission (in production: POST to server or email gateway)
+  setTimeout(() => {
+    const ref = 'FFF-' + Date.now().toString().slice(-6) + Math.random().toString(36).slice(2,5).toUpperCase();
+    document.getElementById('success-ref').textContent = 'REF: ' + ref;
+
+    // Hide all steps and progress
+    document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
+    document.querySelector('.progress-shell').style.display = 'none';
+    document.getElementById('success-screen').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, 1200);
+}
+
+/* ══ INIT ══ */
+updateProgress(1);
+</script>
+</body>
+</html>
